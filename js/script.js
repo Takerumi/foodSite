@@ -193,6 +193,14 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+    // вариант создания карточек при помощи внешней библиотеки    
+    // axios.get('http://localhost:3000/menu')
+    //     .then(data => {
+    //         data.data.forEach(({img, altimg, title, descr, price}) => {
+    //             new MenuCard(img, altimg, title, descr, price, '.menu .container').render();
+    //         });
+    //     });
+
     // вариант создания карточек динамически без шаблонизации
     // getResource('http://localhost:3000/menu')
     //     .then(data => createCard(data));
@@ -297,6 +305,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     fetch('http://localhost:3000/menu')
-        .then(data => data.json())
-        .then(res => console.log(res));
+        .then(data => data.json());
+        // .then(res => console.log(res));
 });
