@@ -306,14 +306,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
     fetch('http://localhost:3000/menu')
         .then(data => data.json());
-        // .then(res => console.log(res));
 
 
     // Slider
 
     const slides = document.querySelectorAll('.offer__slide'),
           slider = document.querySelector('.offer__slider'),
-          prev = document.querySelector('.offer__slider-prev')
+          prev = document.querySelector('.offer__slider-prev'),
           next = document.querySelector('.offer__slider-next'),
           total = document.querySelector('#total'),
           current = document.querySelector('#current'),
@@ -323,13 +322,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let indexSlide = 1,
         offset = 0;
-
-    if (slides.length < 10) {
-        total.textContent = `0${slides.length}`;
-        current.textContent = `0${indexSlide}`;
-    } else {
-        total.textContent = slides.length;
-        current.textContent = indexSlide;
+    
+    function addZeroToCurrent() {
+        if (slides.length < 10) {
+            total.textContent = `0${slides.length}`;
+            current.textContent = `0${indexSlide}`;
+        } else {
+            total.textContent = slides.length;
+            current.textContent = indexSlide;
+        }
     }
 
     slidesField.style.width = 100 * slides.length + '%';
@@ -388,12 +389,16 @@ window.addEventListener('DOMContentLoaded', () => {
         dots.push(dot);
     }
 
+    function numWidth(str) {
+        return +str.replace(/\D/g, '');
+    }
+
+
     next.addEventListener('click', () => {
-        const numWidth = +width.match(/[0-9]/g).join('');
-        if (offset == numWidth * (slides.length - 1)){
+        if (offset == numWidth(width) * (slides.length - 1)){
             offset = 0;
         } else {
-            offset += numWidth;
+            offset += numWidth(width);
         }
 
         slidesField.style.transform = `translateX(-${offset}px)`;
@@ -415,11 +420,10 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     prev.addEventListener('click', () => {
-        const numWidth = +width.match(/[0-9]/g).join('');
         if (offset == 0){
-            offset = numWidth * (slides.length - 1);
+            offset = numWidth(width) * (slides.length - 1);
         } else {
-            offset -= numWidth;
+            offset -= numWidth(width);
         }
 
         slidesField.style.transform = `translateX(-${offset}px)`;
@@ -430,11 +434,7 @@ window.addEventListener('DOMContentLoaded', () => {
             indexSlide--;
         }
 
-        if (slides.length < 10) {
-            current.textContent = `0${indexSlide}`;
-        } else {
-            current.textContent = indexSlide;
-        }
+        addZeroToCurrent();
 
         dots.forEach(dot => dot.style.opacity = '.5');
         dots[indexSlide - 1].style.opacity = 1;
@@ -445,18 +445,124 @@ window.addEventListener('DOMContentLoaded', () => {
             const slideTo = e.target.getAttribute('data-slide-to');
 
             indexSlide = slideTo;
-            offset = (+width.match(/[0-9]/g).join('')) * (slideTo - 1);
+            offset = numWidth(width) * (slideTo - 1);
             
             slidesField.style.transform = `translateX(-${offset}px)`;
             
-            if (slides.length < 10) {
-                current.textContent = `0${indexSlide}`;
-            } else {
-                current.textContent = indexSlide;
-            }
+            addZeroToCurrent();
 
             dots.forEach(dot => dot.style.opacity = '.5');
             dots[indexSlide - 1].style.opacity = 1;
         });
     });
+
+    // Calc
+
+    const result = document.querySelector('.calculating__result span');
+
+    let sex, height, weight, age, ratio;
+
+    if (localStorage.getItem('sex')) {
+        sex = localStorage.getItem('sex');
+    } else {
+        sex = 'female';
+        localStorage.setItem('sex', 'female');
+    }
+
+    if (localStorage.getItem('ratio')) {
+        ratio = localStorage.getItem('ratio');
+    } else {
+        ratio = 1.375;
+        localStorage.setItem('ratio', 1.375);
+    }
+
+    function initLocalSettings(selector, activeClass) {
+        const elements = document.querySelectorAll(selector);
+
+        elements.forEach(elem => {
+            elem.classList.remove(activeClass);
+            if (elem.getAttribute('id') === localStorage.getItem('sex')) {
+                elem.classList.add(activeClass);
+            }
+            if (elem.getAttribute('data-ratio') === localStorage.getItem('ratio')) {
+                elem.classList.add(activeClass);
+            }
+        });
+    }
+
+    initLocalSettings('#gender div', 'calculating__choose-item_active');
+    initLocalSettings('.calculating__choose_big div', 'calculating__choose-item_active');
+
+    function calcTotal() {
+        if (!sex || !height || !weight || !age || !ratio) {
+            result.textContent = '____';
+            return;
+        }
+
+        if (sex === 'female') {
+            result.textContent = Math.round((447.6 + (9.2 * weight) + (3.1 * height) - (4.3 * age)) * ratio);
+        } else {
+            result.textContent = Math.round((88.36 + (13.4 * weight) + (4.8 * height) - (5.7 * age)) * ratio);
+        }
+    }    
+
+    calcTotal();
+
+    function getStaticInfo(selector, activeClass) {
+        const elements = document.querySelectorAll(selector);
+
+        elements.forEach(elem => {
+            elem.addEventListener('click', (e) => {
+                if (e.target.getAttribute('data-ratio')) {
+                    ratio = +e.target.getAttribute('data-ratio');
+                    localStorage.setItem('ratio', +e.target.getAttribute('data-ratio'));
+                } else {
+                    sex = e.target.getAttribute('id');
+                    localStorage.setItem('sex', e.target.getAttribute('id'));
+                }
+    
+                elements.forEach(elem => {
+                    elem.classList.remove(activeClass);
+                });
+    
+                e.target.classList.add(activeClass);
+    
+                calcTotal();
+            });
+        });
+    }
+
+    getStaticInfo('#gender div', 'calculating__choose-item_active');
+    getStaticInfo('.calculating__choose_big div', 'calculating__choose-item_active');
+ 
+    function getDinamicInfo(selector) {
+        const input = document.querySelector(selector);
+
+        input.addEventListener('input', () => {
+
+            if (input.value.match(/\D/g)) {
+                input.style.border = '1px solid red';
+            } else {
+                input.style.border = 'none';
+            }
+
+            switch(input.getAttribute('id')) {
+                case 'height':
+                    height = +input.value;
+                    break;
+                case 'weight':
+                    weight = +input.value;
+                    break;
+                case 'age':
+                    age = +input.value;
+                    break;
+            }
+
+            calcTotal();
+        });
+    }
+
+    getDinamicInfo('#height');
+    getDinamicInfo('#weight');
+    getDinamicInfo('#age');
 });
